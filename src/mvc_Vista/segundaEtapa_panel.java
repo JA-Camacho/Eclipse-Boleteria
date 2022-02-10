@@ -40,6 +40,7 @@ public class segundaEtapa_panel extends JFrame {
 	 * Create the panel.
 	 */
 	public segundaEtapa_panel(Eventos event, String horario) {
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setTitle("DATOS");
 		segundaEtapa_panel sp = this;
 		setResizable(false);

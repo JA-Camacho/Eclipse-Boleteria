@@ -32,9 +32,10 @@ public class ventana_micine extends JFrame implements Runnable{
 	 * Create the frame.
 	 */
 	public ventana_micine() {
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setResizable(false);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 1041, 797);
+		setBounds(50, 0, 1041, 797);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		contentPane.setLayout(new BorderLayout(0, 0));
@@ -50,13 +51,12 @@ public class ventana_micine extends JFrame implements Runnable{
 	public void run() {
 		while(tiempo != null) {
 			try {
-				Thread.sleep(3000);				
+				Thread.sleep(300);				
 			}catch(InterruptedException e){
 				e.printStackTrace();
 			}
 			panel_intro pi = new panel_intro();
 			dispose();
-			pi.setBounds(100, 100, 1041, 797);
 			pi.setVisible(true);
 			break;
 		}

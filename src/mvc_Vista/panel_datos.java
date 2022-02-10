@@ -37,13 +37,14 @@ public class panel_datos extends JFrame {
 	 * Create the frame.
 	 */
 	public panel_datos(Eventos event, Catalogo cat) {
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		panel_datos pd = this;
 		setResizable(false);
 		setFont(new Font("DialogInput", Font.BOLD | Font.ITALIC, 12));
 		setBackground(new Color(255, 0, 0));
 		setTitle("INFORMACI\u00D3N\r\n");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 830, 609);
+		setBounds(50, 0, 830, 609);
 		contentPane = new JPanel();
 		contentPane.setBackground(new Color(135, 206, 250));
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));

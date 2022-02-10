@@ -1,5 +1,5 @@
 Evento;Titulo;Duracion;Genero/Actores;Sinapsis/Tematica;Sala;Horarios;Censura
-Pelicula;Spiderman;120;Accion;Tercera entrega de la saga protagonizada por Peter Parker (Tom Holland);1;17:00;no
+Pelicula;Spiderman;120;Accion;Tercera entrega de la saga protagonizada por Peter Parker (Tom Holland);1;17:00,18:00;no
 Teatro;Macbeth;100;Duncan,Malcolm;Tragedia;3;20:00;
 Teatro;Hamlet;120;Hamlet,Gertrudis;Tragedia;8;23:00;
 Pelicula;Into Spiderverse;110;Animación;el joven Miles Morales desarrolla poderes que lo transforman en el Hombre Araña.;9;9:00;no

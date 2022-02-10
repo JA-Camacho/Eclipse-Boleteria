@@ -39,6 +39,7 @@ public class panel_factura extends JFrame {
 	 * Create the panel.
 	 */
 	public panel_factura(Cliente client, Eventos event, String horario, Boletos boleto) {
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setTitle("FACTURA");
 		setResizable(false);
 		getContentPane().setBackground(new Color(189, 183, 107));
@@ -269,5 +270,6 @@ public class panel_factura extends JFrame {
 		panel_1.add(btnNewButton);
 		ln = new logica_negocio();
 		ln.cargarFactura(this, event, client, boleto);
+		ln.addBoleteria(Integer.parseInt(lbl_numsala.getText()));
 	}
 }

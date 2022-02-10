@@ -2,27 +2,23 @@ package mvc_Controlador;
 import patron_generico.*;
 import mvc_Vista.*;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 import mvc_Modelo.*;
-public class logica_negocio{
+public class logica_negocio implements configurable{
 
+	private DefaultTableModel modelo;
+	private ResultSet res;
+	private conexionJDB con;
 	private atributos_gen<Eventos, Double> datos;
-	Date date = new Date();
-	DateFormat dateFormat = new SimpleDateFormat("dd/MM/yy");
 	public logica_negocio(){
 		datos = new atributos_gen<Eventos, Double>();
+		con = new conexionJDB();
 	}
 
 	public Double calcularIVA(Double numero) {
@@ -32,35 +28,21 @@ public class logica_negocio{
 	public void cargarEventos(String evento) {
 		datos.getAlmacen().clear();
 		try {
-			FileReader archivo = new FileReader("src/Eventos.csv");
-			BufferedReader salida = new BufferedReader(archivo);
-			salida.readLine();
 			switch(evento) {
 			case "PELICULA":
-				while(salida.ready()) {
-					String [] data = salida.readLine().split(";");
-					if(data[0].toLowerCase().equals("pelicula")) {
-						datos.addAlmacen(new Pelicula(new ImageIcon("src/Imagenes/" + data[1] + ".jpg"),data[1], data[2], data[5], data[6].split(",") , data[3], data[7], data[4]));
-					}
+				res = con.getQuery("SELECT * FROM peliculas WHERE estado=1;");
+				while(res.next()) {
+					datos.addAlmacen(new Pelicula(new ImageIcon("src/Imagenes/" + res.getString("titulo") + ".jpg"), res.getString("titulo"), res.getString("duracion"), res.getString("sala"), res.getString("horarios").split(",") , res.getString("genero"), res.getString("censura"), res.getString("sinapsis")));
 				}
-				salida.close();
-				archivo.close();
 				break;
 			case "TEATRO":
-				while(salida.ready()) {
-					String [] data = salida.readLine().split(";");
-					if(data[0].toLowerCase().equals("teatro")) {
-						datos.addAlmacen(new funcion_teatro(new ImageIcon("src/Imagenes/" + data[1] + ".jpg"), data[1], data[2], data[5], data[6].split(",") ,data[4], data[3].split(",")));
-					}
+				res = con.getQuery("SELECT * FROM obras_teatro WHERE estado=1;");
+				while(res.next()) {
+					datos.addAlmacen(new funcion_teatro(new ImageIcon("src/Imagenes/" + res.getString("titulo") + ".jpg"), res.getString("titulo"), res.getString("duracion"), res.getString("sala"), res.getString("horarios").split(","), res.getString("tematica"), res.getString("actores").split(",")));
 				}
-				salida.close();
-				archivo.close();
 				break;
 			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch(IOException e) {
+		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -139,7 +121,7 @@ public class logica_negocio{
 			return --num;
 		else if(asiento.isSelected() && num == 0) {
 			asiento.setSelected(false);
-			JOptionPane.showMessageDialog(null, "Cantidad Excedida");
+			printUI("Cantidad Excedida", 1);
 			return 0;
 		}
 		else
@@ -148,6 +130,7 @@ public class logica_negocio{
 
 	public void CargarAsientos(Eventos event, Sala sala_, String horario) {
 		Sala_cine sala = new Sala_cine(Integer.parseInt(event.getSala()), horario);
+
 		if(sala.getSala()[0][0] == '0') 
 			asientoVacio(sala_.lbl_a1);
 		else
@@ -499,7 +482,7 @@ public class logica_negocio{
 			cat.cerrar();
 		}
 		else
-			JOptionPane.showMessageDialog(null, "No hay disponibilidad en la sala");
+			printUI("No hay disponibilidad en la sala", 1);
 	}
 
 	public void comprobarCensura(segundaEtapa_panel et, Eventos event) {
@@ -812,5 +795,292 @@ public class logica_negocio{
 		}
 		sala.guardarSala();
 
+	}
+
+	public boolean login(panel_Administrador pa) {
+		res = con.getQuery("SELECT usuario, password FROM usuarios;");
+		try {
+			while(res.next()) {
+				if(pa.txt_usuario.getText().equals(res.getString("usuario")) && pa.txt_password.getText().equals(res.getString("password"))) {
+					return true;
+				}
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
+		return false;
+	}
+
+	public void cargarSalas(panel_RegistroPeliculas prP, panel_RegistroTeatro prT, int tipo) {
+		res = con.getQuery("SELECT id_sala FROM salas");
+		try {
+			while(res.next()) {
+				if(tipo == 1)//Pelicula
+					prP.cmbBox_sala.addItem(res.getInt("id_sala"));
+				else //Obra de teatro
+					prT.cmbBox_sala.addItem(res.getInt("id_sala"));
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void add(panel_RegistroPeliculas prP, panel_RegistroTeatro prT, int tipo) {
+		try {
+			switch(tipo) {
+			case 1: //Pelicula
+				if(prP.txt_titulo.getText().isBlank() || prP.txt_genero.getText().isBlank() || prP.txt_sinapsis.getText().isBlank() || prP.txt_duracion.getText().isBlank() || prP.txt_horarios.getText().isBlank()) {
+					printUI("Se debe rellenar todos los campos!", 1);
+					return;
+				}
+				res = con.getQuery(String.format("SELECT * FROM salas WHERE id_sala='%d';", Integer.parseInt(prP.cmbBox_sala.getSelectedItem().toString())));
+				res.next();
+				if(res.getInt("disponible") == 0) {
+					printUI("La sala seleccionada no esta disponible!", 1);
+					return;
+				}
+				con.setQuery(String.format("INSERT INTO peliculas VALUES ('%s', '%d', '%s', '%s', '%d', '%s', '%s', '%d')",
+						prP.txt_titulo.getText(),
+						Integer.parseInt(prP.txt_duracion.getText()),
+						prP.txt_genero.getText(),
+						prP.txt_sinapsis.getText(),
+						Integer.parseInt(prP.cmbBox_sala.getSelectedItem().toString()),
+						prP.txt_horarios.getText(),
+						censura(prP),
+						estado(prP, prT, 0)));
+				con.setQuery(String.format("UPDATE salas SET disponible=0 WHERE id_sala='%d'", Integer.parseInt(prP.cmbBox_sala.getSelectedItem().toString())));
+				break;
+			case 2: //Obra de teatro
+				if(prT.txt_titulo.getText().isBlank() || prT.txt_tematica.getText().isBlank() || prT.txt_actores.getText().isBlank() || prT.txt_duracion.getText().isBlank() || prT.txt_horarios.getText().isBlank()) {
+					printUI("Se debe rellenar todos los campos!", 1);
+					return;
+				}
+				res = con.getQuery(String.format("SELECT * FROM salas WHERE id_sala='%d';", Integer.parseInt(prT.cmbBox_sala.getSelectedItem().toString())));
+				res.next();
+				if(res.getInt("disponible") == 0) {
+					printUI("La sala seleccionada no esta disponible", 1);
+					return;
+				}
+				con.setQuery(String.format("INSERT INTO obras_teatro VALUES ('%s', '%d', '%s', '%s', '%d', '%s', '%d')",
+						prT.txt_titulo.getText(),
+						Integer.parseInt(prT.txt_duracion.getText()),
+						prT.txt_actores.getText(),
+						prT.txt_tematica.getText(),
+						Integer.parseInt(prT.cmbBox_sala.getSelectedItem().toString()),
+						prT.txt_horarios.getText(),
+						estado(prP, prT, 1)));
+				con.setQuery(String.format("UPDATE salas SET disponible=0 WHERE id_sala='%d'", Integer.parseInt(prT.cmbBox_sala.getSelectedItem().toString())));
+				break;
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public String censura(panel_RegistroPeliculas prP) {
+		if(prP.chckbx_censura.isSelected())
+			return "si";
+		else
+			return "no";
+	}
+
+	public int estado(panel_RegistroPeliculas prP, panel_RegistroTeatro prT, int tipo) {
+		if(tipo == 0) //Pelicula
+			return prP.chckbx_Activo.isSelected()? 1 : 0;
+		else //Obra de teatro
+			return prT.chckbx_Activo.isSelected()? 1 : 0;
+	}
+
+	public void mod(panel_RegistroPeliculas prP, panel_RegistroTeatro prT, int tipo) {
+		if(tipo == 1) { //Pelicula
+			con.setQuery(String.format("UPDATE peliculas SET titulo='%s', duracion='%d', genero='%s', sinapsis='%s', sala='%d', horarios='%s', censura='%s', estado='%d' WHERE titulo='%s'", 
+					prP.txt_titulo.getText(),
+					Integer.parseInt(prP.txt_duracion.getText()),
+					prP.txt_genero.getText(),
+					prP.txt_sinapsis.getText(),
+					Integer.parseInt(prP.cmbBox_sala.getSelectedItem().toString()),
+					prP.txt_horarios.getText(),
+					censura(prP),
+					estado(prP, prT, 0),
+					prP.txt_titulo.getText()));
+		}
+		else { //Obras de teatro
+			con.setQuery(String.format("UPDATE obras_teatro SET titulo='%s', duracion='%d', actores='%s', tematica='%s', sala='%d', horarios='%s', estado='%d' WHERE titulo='%s';",
+					prT.txt_titulo.getText(),
+					Integer.parseInt(prT.txt_duracion.getText()),
+					prT.txt_actores.getText(),
+					prT.txt_tematica.getText(),
+					Integer.parseInt(prT.cmbBox_sala.getSelectedItem().toString()),
+					prT.txt_horarios.getText(),
+					estado(prP, prT, 1),
+					prT.txt_titulo.getText()));
+		}
+	}
+
+	public void search(panel_RegistroPeliculas prP, panel_RegistroTeatro prT, int tipo) {
+		try {
+			if(tipo == 1) { //pelicula
+				res = con.getQuery(String.format("SELECT * FROM peliculas WHERE titulo like '%s", respuesta("Ingrese el nombre de la pelicula a buscar")) + "%'");
+				res.next();
+				prP.txt_titulo.setText(res.getString("titulo"));
+				prP.txt_genero.setText(res.getString("genero"));
+				prP.txt_duracion.setText(res.getString("duracion"));
+				prP.txt_sinapsis.setText(res.getString("sinapsis"));
+				prP.txt_horarios.setText(res.getString("horarios"));
+				prP.cmbBox_sala.setSelectedItem(res.getInt("sala"));
+				if(res.getInt("estado") == 1)
+					prP.chckbx_Activo.setSelected(true);
+				else
+					prP.chckbx_Activo.setSelected(false);
+				if(res.getString("censura").equals("si"))
+					prP.chckbx_censura.setSelected(true);
+				else
+					prP.chckbx_censura.setSelected(false);
+			}
+			else { //Obra de teatro
+				res = con.getQuery(String.format("SELECT * FROM obras_teatro WHERE titulo like '%s", respuesta("Ingrese el nombre de la obra de teatro a buscar")) + "%'");
+				res.next();
+				prT.txt_titulo.setText(res.getString("titulo"));
+				prT.txt_tematica.setText(res.getString("tematica"));
+				prT.txt_duracion.setText(res.getString("duracion"));
+				prT.txt_actores.setText(res.getString("actores"));
+				prT.txt_horarios.setText(res.getString("horarios"));
+				prT.cmbBox_sala.setSelectedItem(res.getInt("sala"));
+				if(res.getInt("estado") == 1)
+					prT.chckbx_Activo.setSelected(true);
+				else
+					prT.chckbx_Activo.setSelected(false);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void delete(panel_RegistroPeliculas prP, panel_RegistroTeatro prT, int tipo) {
+		try {
+			if(tipo == 1) { //Peliculas
+				res = con.getQuery(String.format("SELECT sala FROM peliculas WHERE titulo like '%s", prP.txt_titulo.getText()) + "%'");
+				con.setQuery(String.format("DELETE FROM peliculas WHERE titulo='%s'", prP.txt_titulo.getText()));
+				res.next();
+				con.setQuery(String.format("UPDATE salas SET disponible=1 WHERE id_sala='%d'", res.getInt("sala")));
+			}
+			else { //Obras de teatro
+				res = con.getQuery(String.format("SELECT sala FROM peliculas WHERE titulo like '%s", prT.txt_titulo.getText()) + "%'");
+				con.setQuery(String.format("DELETE FROM obras_teatro WHERE titulo='%s'", prT.txt_titulo.getText()));
+				res.next();
+				con.setQuery(String.format("UPDATE salas SET disponible=1 WHERE id_sala='%d'", res.getInt("sala")));
+			}	
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void cargarPeliculas(panel_Estadisticas pe) {
+		res = con.getQuery("SELECT titulo FROM peliculas WHERE estado=1");
+		try {
+			while(res.next()) {
+				pe.cmbBox_pelicula.addItem(res.getString("titulo"));
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void cargarObras(panel_Estadisticas pe) {
+		res = con.getQuery("SELECT titulo FROM obras_teatro WHERE estado=1");
+		try {
+			while(res.next()) {
+				pe.cmbBox_obrasTeatro.addItem(res.getString("titulo"));
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void cargarAsientosVacios(panel_Estadisticas pe) {
+		int tipo = 0;
+		if(pe.rdbtn_Pelicula.isSelected()) {
+			tipo = 1;
+		}
+		modelo = new DefaultTableModel(new Object[] {"SALA", "ASIENTOS", "HORARIO"}, 0);
+		try {
+			if(tipo == 1) { //Pelicula
+				res = con.getQuery(String.format("SELECT sala, horarios FROM peliculas WHERE titulo='%s'", pe.cmbBox_pelicula.getSelectedItem().toString()));
+				while(res.next()) {
+					Sala_cine sala = new Sala_cine(res.getInt("sala"), "");
+					modelo.addRow(new Object[] {res.getInt("sala"), sala.getCantidad(), res.getString("horarios")});
+				}
+			}
+			else { //Obra de teatro
+				res = con.getQuery(String.format("SELECT sala, horarios FROM obras_teatro WHERE titulo='%s'", pe.cmbBox_obrasTeatro.getSelectedItem().toString()));
+				while(res.next()) {
+					Sala_cine sala = new Sala_cine(res.getInt("sala"), "");
+					modelo.addRow(new Object[] {res.getInt("sala"), sala.getCantidad(), res.getString("horarios")});
+				}
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		pe.table_asientoslibres.setModel(modelo);
+	}
+
+	public void cargarAsientosOcupados(panel_Estadisticas pe) {
+		int tipo = 0;
+		if(pe.rdbtn_Pelicula.isSelected()) {
+			tipo = 1;
+		}
+		modelo = new DefaultTableModel(new Object[] {"SALA", "ASIENTOS", "HORARIO"}, 0);
+		try {
+			if(tipo == 1) {
+				res = con.getQuery(String.format("SELECT sala, horarios FROM peliculas WHERE titulo='%s'", pe.cmbBox_pelicula.getSelectedItem().toString()));
+				while(res.next()) {
+					Sala_cine sala = new Sala_cine(res.getInt("sala"), "");
+					modelo.addRow(new Object[] {res.getInt("sala"), 60 - sala.getCantidad(), res.getString("horarios")});
+				}
+			}
+			else {
+				res = con.getQuery(String.format("SELECT sala, horarios FROM obras_teatro WHERE titulo='%s'", pe.cmbBox_obrasTeatro.getSelectedItem().toString()));
+				while(res.next()) {
+					Sala_cine sala = new Sala_cine(res.getInt("sala"), "");
+					modelo.addRow(new Object[] {res.getInt("sala"), 60 - sala.getCantidad(), res.getString("horarios")});
+				}
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		pe.table_asientosocupados.setModel(modelo);
+	}
+
+	public void addBoleteria(int sala) {
+		con.setQuery(String.format("INSERT INTO boleteria VALUES ('%d', '", sala) + datos.getAtributoS5() + "');");
+	}
+
+	public void cargarBoleteria(panel_Estadisticas pe) {
+		double valor = 0;
+		modelo = new DefaultTableModel(new Object[] {"SALA", "VALOR"}, 0);
+		for(int i = 1; i <= 10; i++) {
+			res = con.getQuery(String.format("SELECT * FROM boleteria WHERE sala=%d", i));
+			try {
+				while(res.next()) {
+					valor += res.getDouble("precio"); 
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			modelo.addRow(new Object[] {i, "$" + valor});
+			valor = 0;
+		}
+		pe.table_boleteria.setModel(modelo);
 	}
 }

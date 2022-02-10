@@ -1,0 +1,6 @@
+ip=localhost
+puerto=3306
+name_bbdd=m_bbdd
+user=root
+psw=
+driver=com.mysql.cj.jdbc.Driver

@@ -29,12 +29,12 @@ public class Catalogo extends JFrame {
 	 * Create the panel.
 	 */
 	public Catalogo(String evento) {
+		setBounds(50, 0, 1024, 768);
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setTitle("CARTELERA");
 		getContentPane().setBackground(new Color(240, 230, 140));
 		setResizable(false);
 		Catalogo cat = this;
-		setMaximumSize(new Dimension(1024, 768));
-		setMinimumSize(new Dimension(1024, 768));
 		getContentPane().setLayout(null);
 
 		JPanel panel = new JPanel();

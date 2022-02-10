@@ -152,6 +152,7 @@ public class Sala extends JFrame {
 	 * Create the frame.
 	 */
 	public Sala(Eventos event, Cliente persona, Boletos boleto, String horario) {
+		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setTitle("SALA");
 		num = boleto.getNumAdultos() + boleto.getNumNinos();
 		Sala sala_ = this;

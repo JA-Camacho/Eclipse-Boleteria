@@ -4,6 +4,7 @@ import javax.swing.JPanel;
 import javax.swing.JLabel;
 import java.awt.Font;
 import java.awt.Color;
+import javax.swing.ImageIcon;
 
 public class panel_bienvenida extends JPanel{
 	
@@ -24,5 +25,4 @@ public class panel_bienvenida extends JPanel{
 		lblNewLabel.setBounds(151, 267, 712, 215);
 		panel.add(lblNewLabel);		
 	}
-
 }
